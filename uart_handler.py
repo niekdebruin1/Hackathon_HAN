@@ -17,7 +17,7 @@ class UARTHandler(QObject):
             # Read data from the serial port
             if(self.ser.in_waiting >0):
                 data = self.ser.readline().decode('utf-8').strip()
-
+                self.ser.flush()
                 # Emit the signal with the received data
                 self.dataReceived.emit(data)
 

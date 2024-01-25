@@ -14,7 +14,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.uart_handler.read_uart_data)
-        self.timer.start(200) #Interval in milliseconds 
+        self.timer.start(100) #Interval in milliseconds 
 
     def closeEvent(self, event):
         # Close the serial port when the application is closed
