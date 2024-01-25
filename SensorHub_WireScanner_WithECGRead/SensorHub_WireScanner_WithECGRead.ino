@@ -100,7 +100,6 @@ void loop() {
   reportDevicesOn(&WireSensorA, "Sensors Ax");
   reportDevicesOn(&WireSensorB, "Sensors Bx");
 
-  delay(500);  // wait 5 seconds for next scan
   digitalWrite(ledHb, LOW);
   delay(500);  // wait 5 seconds for next scan
 }
