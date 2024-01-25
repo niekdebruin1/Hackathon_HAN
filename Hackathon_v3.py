@@ -374,8 +374,16 @@ class Ui_MainWindow(object):
         self.pushButton_1.setText(_translate("MainWindow", "PushButton"))
     
     def updateConnectionStatus(self, data):
-        
-        print("received update")
+        device, number = data.split(":")
+        if(device == "ECG"):
+            print(number)
+            if(number == '0'):
+                self.ECG_status = False
+                self.Resp_status = False
+            else:
+                self.ECG_status = True
+                self.Resp_status = True
+            
 
     def updateLCDs(self):
         if(self.ECG_status == True):
@@ -395,7 +403,9 @@ class Ui_MainWindow(object):
         else:
             self.PPG_lcd.display(0)
         if(self.Resp_status == True):
-            print("true")
+            self.Resp_lcd.display(15)
+        else:
+            self.Resp_lcd.display(0)
 
     def updateGraphs(self):
         self.updateECGGraphs()

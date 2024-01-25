@@ -4,7 +4,7 @@ import serial
 class UARTHandler(QObject):
     dataReceived = pyqtSignal(str)  # Signal to notify the reception of new data
 
-    def __init__(self, port, baudrate=9600, timeout=1):
+    def __init__(self, port, baudrate=115200, timeout=3):
         super().__init__()
         try:
             self.ser = serial.Serial(port, baudrate, timeout=timeout)
@@ -15,10 +15,11 @@ class UARTHandler(QObject):
     def read_uart_data(self):
         try:
             # Read data from the serial port
-            data = self.ser.readline().decode('utf-8').strip()
+            if(self.ser.in_waiting >0):
+                data = self.ser.readline().decode('utf-8').strip()
 
-            # Emit the signal with the received data
-            self.dataReceived.emit(data)
+                # Emit the signal with the received data
+                self.dataReceived.emit(data)
 
         except Exception as e:
             # Handle exceptions (e.g., serial port errors)

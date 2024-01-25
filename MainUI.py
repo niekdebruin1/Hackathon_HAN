@@ -14,7 +14,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.uart_handler.read_uart_data)
-        self.timer.start(1000) #Interval in milliseconds 
+        self.timer.start(200) #Interval in milliseconds 
         
 
     def closeEvent(self, event):
@@ -27,7 +27,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     # Create an instance of the UARTHandler class
-    uart_handler = UARTHandler('COM1')
+    uart_handler = UARTHandler('COM7')
     
     mainWindow = MainWindow(uart_handler)
     mainWindow.show()
