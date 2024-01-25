@@ -33,14 +33,17 @@ def generateSynthSignals ():
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow, uart_handler):
-        ######################################################################################
+
+         ######################################################################################
         # Create an instance of the UARTHandler class
         self.uart_handler = uart_handler
 
         # Connect the UARTHandler signal to the updateGraphs slot
-        self.uart_handler.dataReceived.connect(self.updateGraphs)
+        self.uart_handler.dataReceived.connect(self.updateConnectionStatus)
         
         ######################################################################################
+
+
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1336, 720)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -56,21 +59,20 @@ class Ui_MainWindow(object):
         self.ECG_widget = QtWidgets.QWidget(self.verticalLayoutWidget)
         self.ECG_widget.setObjectName("ECG_widget")
         
-        # self.setStyleSheet("background-color: #000000;")
         self.ECG_widget = QtWidgets.QWidget(self.verticalLayoutWidget)
         self.ECG_widget.setObjectName("ECG_widget")
        ###############start here
-        self.figure, self.ax1 = plt.subplots()
-        self.canvas = FigureCanvas(self.figure)
-        layout = QtWidgets.QVBoxLayout(self.ECG_widget)
-        layout.addWidget(self.canvas)
+        self.ECGfigure, self.ECG_ax = plt.subplots()
+        self.ECGcanvas = FigureCanvas(self.ECGfigure)
+        ECGlayout = QtWidgets.QVBoxLayout(self.ECG_widget)
+        ECGlayout.addWidget(self.ECGcanvas)
        
-        self.x_data1 = np.arange(-10, 0, 0.01)
+        self.ECG_x = np.arange(-10, 0, 0.01)
         df = generateSynthSignals()
-        self.full_y1 = df['ECG'].to_numpy(dtype=float)
-        self.y_data1 = self.full_y1[0:1000]
+        self.full_yECG = df['ECG'].to_numpy(dtype=float)
+        self.ECG_y = self.full_yECG[0:1000]
         # Plot the initial data for the first graph
-        self.line1, = self.ax1.plot(self.x_data1, self.y_data1, color='green')
+        self.ECGline, = self.ECG_ax.plot(self.ECG_x, self.ECG_y, color='green')
 
         # Plot the initial data for the second graph
         self.ECG_widget_layout.addWidget(self.ECG_widget)
@@ -85,6 +87,25 @@ class Ui_MainWindow(object):
         self.PPG_Widget = QtWidgets.QWidget(self.verticalLayoutWidget_2)
         self.PPG_Widget.setObjectName("PPG_Widget")
         self.PPG_widget_layout.addWidget(self.PPG_Widget)
+        ##########################################################
+        ######################PPG#################################
+        self.PPG_widget_layout.setContentsMargins(0, 0, 0, 0)
+        self.PPG_widget_layout.setObjectName("PPG_widget_layout")
+
+        self.PPGfigure, self.PPG_ax = plt.subplots()
+        self.PPGcanvas = FigureCanvas(self.PPGfigure)
+        PPGlayout = QtWidgets.QVBoxLayout(self.PPG_Widget)
+        PPGlayout.addWidget(self.PPGcanvas)
+       
+        self.PPG_x = np.arange(-10, 0, 0.01)
+        self.full_yPPG = df['PPG'].to_numpy(dtype=float)
+        self.PPG_y = self.full_yPPG[0:1000]
+        # Plot the initial data for the first graph
+        self.PPGline, = self.PPG_ax.plot(self.PPG_x, self.PPG_y, color='orange')
+
+        #############################################################
+        #############################################################
+        
         self.gridLayoutWidget = QtWidgets.QWidget(self.centralwidget)
         self.gridLayoutWidget.setGeometry(QtCore.QRect(1050, 50, 261, 81))
         self.gridLayoutWidget.setObjectName("gridLayoutWidget")
@@ -157,6 +178,28 @@ class Ui_MainWindow(object):
         self.Resp_widget = QtWidgets.QWidget(self.verticalLayoutWidget_6)
         self.Resp_widget.setObjectName("Resp_widget")
         self.Resp_widget_layout.addWidget(self.Resp_widget)
+
+        ##########################################################
+        ######################Resp#################################
+        self.Resp_widget_layout.setContentsMargins(0, 0, 0, 0)
+        self.Resp_widget_layout.setObjectName("Resp_widget_layout")
+
+        self.Respfigure, self.Resp_ax = plt.subplots()
+        self.Respcanvas = FigureCanvas(self.Respfigure)
+        Resplayout = QtWidgets.QVBoxLayout(self.Resp_widget)
+        Resplayout.addWidget(self.Respcanvas)
+       
+        self.Resp_x = np.arange(-10, 0, 0.01)
+        self.full_yResp = df['RSP'].to_numpy(dtype=float)
+        self.Resp_y = self.full_yResp[0:1000]
+        # Plot the initial data for the first graph
+        self.Resp_ax.set_xlim(self.Resp_x[0], self.Resp_x[-1])
+        self.Resp_ax.set_ylim(-0.8, 1)
+        self.Respline, = self.Resp_ax.plot(self.Resp_x, self.Resp_y, color='white')
+
+        #############################################################
+        #############################################################
+
         self.verticalLayoutWidget_7 = QtWidgets.QWidget(self.centralwidget)
         self.verticalLayoutWidget_7.setGeometry(QtCore.QRect(1049, 470, 261, 81))
         self.verticalLayoutWidget_7.setObjectName("verticalLayoutWidget_7")
@@ -248,6 +291,48 @@ class Ui_MainWindow(object):
         self.timer.timeout.connect(self.updateGraphs)
         self.timer.start(50)  # Update every 100 milliseconds
 
+        self.lcd_timer = QTimer(self)
+        self.lcd_timer.timeout.connect(self.updateLCDs)
+        self.lcd_timer.start(1500)
+
+        cleaned_ppg = nk.ppg_clean(self.PPG_y, sampling_rate=100, heart_rate=70)
+        peaks = nk.ppg_findpeaks(cleaned_ppg,sampling_rate=100)
+        ppg_rate = nk.ppg_rate(peaks,100)
+
+        self.PPG_lcd.display(ppg_rate[0])
+
+        ############################Colors########################
+        self.setStyleSheet("background-color: #000000;")
+        self.ECG_ax.set_facecolor('black')
+        self.ECGfigure.set_facecolor('black')
+        self.ECG_lcd.setStyleSheet("QLCDNumber { color: green; border: green;}")
+        self.ECG_text.setStyleSheet("QLabel { color: green; }")
+        self.Pulse_text.setStyleSheet("QLabel { color: green; }")
+        self.ECG_lcd_text_layout_2.setStyleSheet("QLabel { color: green; }")
+
+        self.PPG_ax.set_facecolor('black')
+        self.PPGfigure.set_facecolor('black')
+        self.PPG_lcd.setStyleSheet("QLCDNumber { color: orange; border: orange;}")
+        self.PPG_text.setStyleSheet("QLabel { color: orange; }")
+        self.PPG_text_2.setStyleSheet("QLabel { color: orange; }")
+
+        self.Resp_ax.set_facecolor('black')
+        self.Respfigure.set_facecolor('black')
+        self.Resp_lcd.setStyleSheet("QLCDNumber { color: white; border: white;}")
+        self.Resp_text.setStyleSheet("QLabel { color: white; }")
+        self.Resp_text_2.setStyleSheet("QLabel { color: white; }")
+
+        self.Temp_text.setStyleSheet("QLabel { color: green; }")
+        self.Temp_lcd.setStyleSheet("QLCDNumber { color: green; border: green;}")
+
+        self.NIBP_text.setStyleSheet("QLabel { color: red; }")
+        self.NIBP_lcd.setStyleSheet("QLCDNumber { color: red; border: red;}")
+        
+        self.Pulse_lcd.setStyleSheet("QLCDNumber { color: green; border: green;}")
+
+        self.pushButton_1.setStyleSheet("QPushButton  { background-color: green}")
+        self.pushButton_2.setStyleSheet("QPushButton  { background-color: green}")
+        ##########################################################
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -266,30 +351,57 @@ class Ui_MainWindow(object):
         self.Temp_text.setText(_translate("MainWindow", "Temp"))
         self.pushButton_2.setText(_translate("MainWindow", "PushButton"))
         self.pushButton_1.setText(_translate("MainWindow", "PushButton"))
+    
+    def updateConnectionStatus(self, data):
+        
+        print("received update")
+
+    def updateLCDs(self):
+        cleaned_ecg = nk.ecg_clean(self.ECG_y, sampling_rate=100)
+        ecg_peaks = nk.ecg_findpeaks(cleaned_ecg, sampling_rate=100)
+        ecg_rate = nk.ecg_rate(ecg_peaks, sampling_rate=100)
+        self.ECG_lcd.display(ecg_rate[0])
+        self.Pulse_lcd.display(ecg_rate[0])
+
+        cleaned_ppg = nk.ppg_clean(self.PPG_y, sampling_rate=100, heart_rate=70)
+        peaks = nk.ppg_findpeaks(cleaned_ppg,sampling_rate=100)
+        ppg_rate = nk.ppg_rate(peaks,100)
+
+        self.PPG_lcd.display(ppg_rate[0])
 
     def updateGraphs(self):
-        #########################################################
-        #if ECG_sensor_connected:
-            #draw ecg
-        #else:
-            #draw flat line
-        #if SpO2_sensor_connected:
-            #draw SpO2 (ppg)
-        #else
-            #draw flat line
-        #if Rsp_sensor_connected:
-            #draw rsp
-        #else:   
-            #draw flat line 
-        #########################################################
-        # Update the first graph
-        # self.x_data1 = np.roll(self.x_data1, -1)
-        for i in range(5):
-            self.full_y1 = np.roll(self.full_y1, -1)
-        self.y_data1 = self.full_y1[0:1000]
-        self.line1.set_xdata(self.x_data1)
-        self.line1.set_ydata(self.y_data1)
-        self.ax1.set_xlim(self.x_data1[0], self.x_data1[-1]+1)
+        self.updateECGGraphs()
+        self.updateRSPGraphs()
+        self.updatePPGGraphs()
 
+    def updateRSPGraphs(self):
+        for i in range(5):
+            self.full_yResp = np.roll(self.full_yResp, -1)
+        self.Resp_y = self.full_yResp[0:1000]
+        self.Respline.set_xdata(self.Resp_x)
+        self.Respline.set_ydata(self.Resp_y)
+        self.Resp_ax.set_xlim(self.Resp_x[0], self.Resp_x[-1]+1)
         # Redraw both canvases
-        self.canvas.draw()
+        self.Respcanvas.draw()
+
+    def updatePPGGraphs(self):
+        for i in range(5):
+            self.full_yPPG = np.roll(self.full_yPPG, -1)
+        self.PPG_y = self.full_yPPG[0:1000]
+        self.PPGline.set_xdata(self.PPG_x)
+        self.PPGline.set_ydata(self.PPG_y)
+        self.PPG_ax.set_xlim(self.PPG_x[0], self.PPG_x[-1]+1)
+        
+        # Redraw both canvases
+        self.PPGcanvas.draw()
+
+    def updateECGGraphs(self):
+        # Update the first graph
+        for i in range(5):
+            self.full_yECG = np.roll(self.full_yECG, -1)
+        self.ECG_y = self.full_yECG[0:1000]
+        self.ECGline.set_xdata(self.ECG_x)
+        self.ECGline.set_ydata(self.ECG_y)
+        self.ECG_ax.set_xlim(self.ECG_x[0], self.ECG_x[-1]+1)
+        # Redraw both canvases
+        self.ECGcanvas.draw()
