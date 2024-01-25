@@ -44,7 +44,7 @@ TwiPinPair portSensorsA = TwiPinPair(W1_SCL, W1_SDA);
 TwiPinPair portSensorsB = TwiPinPair(W2_SCL, W2_SDA);
 
 #define ECG_MODULE_ADDR 0x2A
-#define TEMP_MODULE1_ADDR 0x68
+
 
 #define ledHb 14
 
@@ -133,12 +133,6 @@ void reportDevicesOn(TwoWire *wire, String label) {
         //Serial.println();
       }
 
-      if (address == TEMP_MODULE1_ADDR) {
-        Serial.print("Temp1:");
-        receiveByteFromTemp1(wire);
-        Serial.println();
-      }
-
       nDevices++;
     } else if (error == 4) {
       //Serial.print("Unknow error at address 0x");
@@ -213,17 +207,5 @@ void receiveByteFromECG(TwoWire *wire) {
   { 
     bool c = wire->read(); // receive a byte as character
     Serial.println(c);         // print the character
-  }
-}
-
-void receiveByteFromTemp1(TwoWire *wire) {
-  wire->requestFrom(TEMP_MODULE1_ADDR, 1);    // request 6 bytes from slave device at ECG_MODULE_ADDR
-  while(wire->available())    // slave may send less than requested
-  { 
-    if(wire->read() == 7) {
-      Serial.print(1);
-    } else {
-      Serial.print(0);
-    }
   }
 }
