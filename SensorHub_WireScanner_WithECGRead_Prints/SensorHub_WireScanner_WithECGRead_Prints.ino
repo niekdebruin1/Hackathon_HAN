@@ -86,7 +86,7 @@ void setup() {
   while (!Serial)
     ;
 
-  //Serial.println("Ready...");
+  Serial.println("Ready...");
   delay(1500);
   digitalWrite(ledHb, LOW);
 }
@@ -94,9 +94,9 @@ void setup() {
 
 void loop() {
   digitalWrite(ledHb, HIGH);
-  //boolean result = reportDevicesWithAddressOn(&WireBackbone, 0x60, true);  // 0x10 is maybe finger position sensor.
+  boolean result = reportDevicesWithAddressOn(&WireBackbone, 0x60, true);  // 0x10 is maybe finger position sensor.
 
-  //reportDevicesOn(&WireBackbone, "Mainbus");
+  reportDevicesOn(&WireBackbone, "Mainbus");
   reportDevicesOn(&WireSensorA, "Sensors Ax");
   reportDevicesOn(&WireSensorB, "Sensors Bx");
 
@@ -107,47 +107,47 @@ void loop() {
 void reportDevicesOn(TwoWire *wire, String label) {
   byte error, address;
   int nDevices;
-  //Serial.print("Scanning bus ");
-  //Serial.println(label);
+  Serial.print("Scanning bus ");
+  Serial.println(label);
   for (address = 1; address < 127; address++) {
     digitalWrite(ledHb, LOW);
     // The i2c_scanner uses the return value of
     // the Write.endTransmisstion to see if
     // a device did acknowledge to the address.
 
-    //wire->beginTransmission(address);
-    //error = wire->endTransmission();
+    wire->beginTransmission(address);
+    error = wire->endTransmission();
 
     if (reportDevicesWithAddressOn(wire, address)) {
       digitalWrite(ledHb, HIGH);
-      //Serial.print("I2C device found at address 0x");
+      Serial.print("I2C device found at address 0x");
       if (address < 16)
         Serial.print("0");
-      //Serial.print(address, HEX);
-      //Serial.println("  !");
-      //printDeviceName(address);
+      Serial.print(address, HEX);
+      Serial.println("  !");
+      printDeviceName(address);
 
       if (address == ECG_MODULE_ADDR) {
         Serial.print("ECG:");
         receiveByteFromECG(wire);
-        //Serial.println();
+        Serial.println();
       }
 
       nDevices++;
     } else if (error == 4) {
-      //Serial.print("Unknow error at address 0x");
+      Serial.print("Unknow error at address 0x");
       if (address < 16) {
-        //Serial.print("0");
+        Serial.print("0");
       }
         
-      //Serial.println(address, HEX);
+      Serial.println(address, HEX);
     }
   }
   if (nDevices == 0) {
-    //Serial.println("No I2C devices found on bus 1\n");
+    Serial.println("No I2C devices found on bus 1\n");
   }
   else {
-    //Serial.println("done\n");
+    Serial.println("done\n");
   }
     
 }
@@ -155,25 +155,25 @@ void reportDevicesOn(TwoWire *wire, String label) {
 void printDeviceName(int address) {
   // Print recognized i2c device names:
   if (address == 0x25) {
-    //Serial.println("Sensirion SDP800-500Pa found...");
+    Serial.println("Sensirion SDP800-500Pa found...");
   }
   if (address == 0x26) {
-    //Serial.println("Sensirion SDP800-501Pa found...");
+    Serial.println("Sensirion SDP800-501Pa found...");
   }
   if (address == 0x29) {
-    //Serial.println("DLC-L01G-U2 or VL6180 found...");
+    Serial.println("DLC-L01G-U2 or VL6180 found...");
   }
   if (address == 0x40) {
-    //Serial.println("Sensirion SDP610-500Pa found...");
+    Serial.println("Sensirion SDP610-500Pa found...");
   }
   if (address == 0x50) {
-    //Serial.println("FRAM/EEPROM found...");
+    Serial.println("FRAM/EEPROM found...");
   }
   if (address == 0x51) {
-    //Serial.println("More memory found? Could be 1M FRAM.");
+    Serial.println("More memory found? Could be 1M FRAM.");
   }
   if (address == 0x7C) {
-    //Serial.println("RESERVED...");
+    Serial.println("RESERVED...");
   }
 }
 
@@ -191,17 +191,17 @@ boolean reportDevicesWithAddressOn(TwoWire *wire, byte deviceAddress, boolean re
   char buffer[40];
   if (report) {
     if (result) {
-      //sprintf(buffer, "Device was found on address 0x%02X", deviceAddress);
+      sprintf(buffer, "Device was found on address 0x%02X", deviceAddress);
     } else {
-      //sprintf(buffer, "No device was found on address 0x%02X", deviceAddress);
+      sprintf(buffer, "No device was found on address 0x%02X", deviceAddress);
     }
-    //Serial.println(buffer);
+    Serial.println(buffer);
   }
   return result;
 }
 
 void receiveByteFromECG(TwoWire *wire) {
-  wire->requestFrom(ECG_MODULE_ADDR, 1);    // request 6 bytes from slave device at ECG_MODULE_ADDR
+  wire->requestFrom(ECG_MODULE_ADDR, 1);    // request 1 byte from slave device at ECG_MODULE_ADDR
 
   while(wire->available())    // slave may send less than requested
   { 
