@@ -32,6 +32,9 @@ def generateSynthSignals ():
     return data
 
 class Ui_MainWindow(object):
+    ECG_status : bool
+    PPG_status : bool
+    Resp_status : bool
     def setupUi(self, MainWindow, uart_handler):
 
          ######################################################################################
@@ -42,8 +45,9 @@ class Ui_MainWindow(object):
         self.uart_handler.dataReceived.connect(self.updateConnectionStatus)
         
         ######################################################################################
-
-
+        self.ECG_status = False
+        self.PPG_status = False
+        self.Resp_status = False
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1336, 720)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -331,11 +335,28 @@ class Ui_MainWindow(object):
         self.Pulse_lcd.setStyleSheet("QLCDNumber { color: green; border: green;}")
 
         self.pushButton_1.setStyleSheet("QPushButton  { background-color: green}")
+        self.pushButton_1.clicked.connect(self.Button1_clicked)
         self.pushButton_2.setStyleSheet("QPushButton  { background-color: green}")
         ##########################################################
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+    def Button1_clicked(self):
+        if(self.ECG_status == False):
+            self.ECG_status = True
+        else:
+            self.ECG_status = False
+
+        if(self.PPG_status == False):
+            self.PPG_status = True
+        else:
+            self.PPG_status = False
+
+        if(self.Resp_status == False):
+            self.Resp_status = True
+        else:
+            self.Resp_status = False
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -357,17 +378,24 @@ class Ui_MainWindow(object):
         print("received update")
 
     def updateLCDs(self):
-        cleaned_ecg = nk.ecg_clean(self.ECG_y, sampling_rate=100)
-        ecg_peaks = nk.ecg_findpeaks(cleaned_ecg, sampling_rate=100)
-        ecg_rate = nk.ecg_rate(ecg_peaks, sampling_rate=100)
-        self.ECG_lcd.display(ecg_rate[0])
-        self.Pulse_lcd.display(ecg_rate[0])
-
-        cleaned_ppg = nk.ppg_clean(self.PPG_y, sampling_rate=100, heart_rate=70)
-        peaks = nk.ppg_findpeaks(cleaned_ppg,sampling_rate=100)
-        ppg_rate = nk.ppg_rate(peaks,100)
-
-        self.PPG_lcd.display(ppg_rate[0])
+        if(self.ECG_status == True):
+            cleaned_ecg = nk.ecg_clean(self.ECG_y, sampling_rate=100)
+            ecg_peaks = nk.ecg_findpeaks(cleaned_ecg, sampling_rate=100)
+            ecg_rate = nk.ecg_rate(ecg_peaks, sampling_rate=100)
+            self.ECG_lcd.display(ecg_rate[0])
+            self.Pulse_lcd.display(ecg_rate[0])
+        else:
+            self.ECG_lcd.display(0)
+            self.Pulse_lcd.display(0)
+        if(self.PPG_status == True):
+            cleaned_ppg = nk.ppg_clean(self.PPG_y, sampling_rate=100, heart_rate=70)
+            peaks = nk.ppg_findpeaks(cleaned_ppg,sampling_rate=100)
+            ppg_rate = nk.ppg_rate(peaks,100)
+            self.PPG_lcd.display(ppg_rate[0])
+        else:
+            self.PPG_lcd.display(0)
+        if(self.Resp_status == True):
+            print("true")
 
     def updateGraphs(self):
         self.updateECGGraphs()
@@ -375,9 +403,13 @@ class Ui_MainWindow(object):
         self.updatePPGGraphs()
 
     def updateRSPGraphs(self):
+
         for i in range(5):
             self.full_yResp = np.roll(self.full_yResp, -1)
-        self.Resp_y = self.full_yResp[0:1000]
+        if(self.Resp_status == True):
+            self.Resp_y = self.full_yResp[0:1000]
+        else:
+            self.Resp_y = None
         self.Respline.set_xdata(self.Resp_x)
         self.Respline.set_ydata(self.Resp_y)
         self.Resp_ax.set_xlim(self.Resp_x[0], self.Resp_x[-1]+1)
@@ -387,7 +419,10 @@ class Ui_MainWindow(object):
     def updatePPGGraphs(self):
         for i in range(5):
             self.full_yPPG = np.roll(self.full_yPPG, -1)
-        self.PPG_y = self.full_yPPG[0:1000]
+        if(self.PPG_status == True):
+            self.PPG_y = self.full_yPPG[0:1000]
+        else:
+            self.PPG_y = None
         self.PPGline.set_xdata(self.PPG_x)
         self.PPGline.set_ydata(self.PPG_y)
         self.PPG_ax.set_xlim(self.PPG_x[0], self.PPG_x[-1]+1)
@@ -399,7 +434,10 @@ class Ui_MainWindow(object):
         # Update the first graph
         for i in range(5):
             self.full_yECG = np.roll(self.full_yECG, -1)
-        self.ECG_y = self.full_yECG[0:1000]
+        if(self.ECG_status == True):
+            self.ECG_y = self.full_yECG[0:1000]
+        else:
+            self.ECG_y = None
         self.ECGline.set_xdata(self.ECG_x)
         self.ECGline.set_ydata(self.ECG_y)
         self.ECG_ax.set_xlim(self.ECG_x[0], self.ECG_x[-1]+1)
