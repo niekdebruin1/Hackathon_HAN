@@ -405,10 +405,14 @@ class Ui_MainWindow(object):
         elif(device == "Temp1"):
             if(number == '1'):
                 first_temp = '37'
+                self.Temp_lcd.display(str(first_temp+'-'+second_temp))
+            else:
+                first_temp = '0'
+                self.Temp_lcd.display(str(first_temp+'-'+second_temp))
         elif(device == "Temp2"):
             if(number == '1'):
                 second_temp = '36'
-        self.Temp_lcd.display(str(first_temp+'-'+second_temp))
+                self.Temp_lcd.display(str(first_temp+'-'+second_temp))
             
 
     def updateLCDs(self):
