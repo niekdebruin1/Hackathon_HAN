@@ -20,6 +20,9 @@ import numpy as np
 import pandas as pd
 import neurokit2 as nk
 
+roll = 10
+cycle = 100
+
 def generateSynthSignals (hb=70, rr=15):
     ecg = nk.ecg_simulate(duration=60, heart_rate=hb, sampling_rate=100)
     ppg = nk.ppg_simulate(duration=60, heart_rate=hb, sampling_rate=100)
@@ -299,7 +302,7 @@ class Ui_MainWindow(object):
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.updateGraphs)
-        self.timer.start(50)  # Update every 100 milliseconds
+        self.timer.start(cycle)  # Update every 100 milliseconds
 
         self.lcd_timer = QTimer(self)
         self.lcd_timer.timeout.connect(self.updateLCDs)
@@ -439,9 +442,8 @@ class Ui_MainWindow(object):
         self.updatePPGGraphs()
 
     def updateRSPGraphs(self):
-        for i in range(5):
+        for i in range(roll):
             self.full_yResp = np.roll(self.full_yResp, -1)
-            self.alt_yECG = np.roll(self.alt_yECG, -1)
         if(self.Resp_status == True):
             self.Resp_y = self.full_yResp[0:1000]
         else:
@@ -453,7 +455,7 @@ class Ui_MainWindow(object):
         self.Respcanvas.draw()
 
     def updatePPGGraphs(self):
-        for i in range(5):
+        for i in range(roll):
             self.full_yPPG = np.roll(self.full_yPPG, -1)
         if(self.PPG_status == True):
             self.PPG_y = self.full_yPPG[0:1000]
@@ -468,7 +470,7 @@ class Ui_MainWindow(object):
 
     def updateECGGraphs(self):
         # Update the first graph
-        for i in range(5):
+        for i in range(roll):
             self.full_yECG = np.roll(self.full_yECG, -1)
             self.alt_yECG = np.roll(self.alt_yECG, -1)
         if(self.ECG_status == True):
