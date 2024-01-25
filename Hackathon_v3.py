@@ -12,16 +12,18 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 from PyQt5.QtCore import Qt, QTimer
+import matplotlib
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import neurokit2 as nk
 
-def generateSynthSignals ():
-    ecg = nk.ecg_simulate(duration=60, heart_rate=70, sampling_rate=100)
-    ppg = nk.ppg_simulate(duration=60, heart_rate=70, sampling_rate=100)
-    rsp = nk.rsp_simulate(duration=60, respiratory_rate=15, sampling_rate=100)
+def generateSynthSignals (hb=70, rr=15):
+    ecg = nk.ecg_simulate(duration=60, heart_rate=hb, sampling_rate=100)
+    ppg = nk.ppg_simulate(duration=60, heart_rate=hb, sampling_rate=100)
+    rsp = nk.rsp_simulate(duration=60, respiratory_rate=rr, sampling_rate=100)
     # eda = nk.eda_simulate(duration=10, scr_number=3)
     # emg = nk.emg_simulate(duration=10, burst_number=2)
     # ecg = nk.ecg_clean(ecg, sampling_rate=100)
@@ -35,6 +37,7 @@ class Ui_MainWindow(object):
     ECG_status : bool
     PPG_status : bool
     Resp_status : bool
+    speed: int
     def setupUi(self, MainWindow, uart_handler):
 
          ######################################################################################
@@ -48,6 +51,7 @@ class Ui_MainWindow(object):
         self.ECG_status = False
         self.PPG_status = False
         self.Resp_status = False
+        self.speed = 0
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1336, 720)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -72,8 +76,10 @@ class Ui_MainWindow(object):
         ECGlayout.addWidget(self.ECGcanvas)
        
         self.ECG_x = np.arange(-10, 0, 0.01)
-        df = generateSynthSignals()
-        self.full_yECG = df['ECG'].to_numpy(dtype=float)
+        self.df = generateSynthSignals(hb=70, rr=15)
+        self.fastdf = generateSynthSignals(hb=20, rr=60)
+        self.full_yECG = self.df['ECG'].to_numpy(dtype=float)
+        self.alt_yECG = self.fastdf['ECG'].to_numpy(dtype=float)
         self.ECG_y = self.full_yECG[0:1000]
         # Plot the initial data for the first graph
         self.ECGline, = self.ECG_ax.plot(self.ECG_x, self.ECG_y, color='green')
@@ -102,7 +108,7 @@ class Ui_MainWindow(object):
         PPGlayout.addWidget(self.PPGcanvas)
        
         self.PPG_x = np.arange(-10, 0, 0.01)
-        self.full_yPPG = df['PPG'].to_numpy(dtype=float)
+        self.full_yPPG = self.df['PPG'].to_numpy(dtype=float)
         self.PPG_y = self.full_yPPG[0:1000]
         # Plot the initial data for the first graph
         self.PPGline, = self.PPG_ax.plot(self.PPG_x, self.PPG_y, color='orange')
@@ -194,7 +200,7 @@ class Ui_MainWindow(object):
         Resplayout.addWidget(self.Respcanvas)
        
         self.Resp_x = np.arange(-10, 0, 0.01)
-        self.full_yResp = df['RSP'].to_numpy(dtype=float)
+        self.full_yResp = self.df['RSP'].to_numpy(dtype=float)
         self.Resp_y = self.full_yResp[0:1000]
         # Plot the initial data for the first graph
         self.Resp_ax.set_xlim(self.Resp_x[0], self.Resp_x[-1])
@@ -304,7 +310,9 @@ class Ui_MainWindow(object):
         ppg_rate = nk.ppg_rate(peaks,100)
 
         self.PPG_lcd.display(ppg_rate[0])
-
+        first_temp = '0'
+        second_temp = '0'
+        self.Temp_lcd.display(str(first_temp+'-'+second_temp))
         ############################Colors########################
         self.setStyleSheet("background-color: #000000;")
         self.ECG_ax.set_facecolor('black')
@@ -337,6 +345,7 @@ class Ui_MainWindow(object):
         self.pushButton_1.setStyleSheet("QPushButton  { background-color: green}")
         self.pushButton_1.clicked.connect(self.Button1_clicked)
         self.pushButton_2.setStyleSheet("QPushButton  { background-color: green}")
+        self.pushButton_2.clicked.connect(self.Button2_clicked)
         ##########################################################
 
         self.retranslateUi(MainWindow)
@@ -358,6 +367,12 @@ class Ui_MainWindow(object):
         else:
             self.Resp_status = False
 
+    def Button2_clicked(self):
+        if(self.speed == 0):
+            self.speed = 1
+        else:
+            self.speed = 0
+
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
@@ -375,14 +390,22 @@ class Ui_MainWindow(object):
     
     def updateConnectionStatus(self, data):
         device, number = data.split(":")
+        first_temp = '0'
+        second_temp = '0'
         if(device == "ECG"):
-            print(number)
             if(number == '0'):
                 self.ECG_status = False
                 self.Resp_status = False
             else:
                 self.ECG_status = True
                 self.Resp_status = True
+        elif(device == "Temp1"):
+            if(number == '1'):
+                first_temp = '37'
+        elif(device == "Temp2"):
+            if(number == '1'):
+                second_temp = '36'
+        self.Temp_lcd.display(str(first_temp+'-'+second_temp))
             
 
     def updateLCDs(self):
@@ -390,8 +413,11 @@ class Ui_MainWindow(object):
             cleaned_ecg = nk.ecg_clean(self.ECG_y, sampling_rate=100)
             ecg_peaks = nk.ecg_findpeaks(cleaned_ecg, sampling_rate=100)
             ecg_rate = nk.ecg_rate(ecg_peaks, sampling_rate=100)
-            self.ECG_lcd.display(ecg_rate[0])
-            self.Pulse_lcd.display(ecg_rate[0])
+            try:
+                self.ECG_lcd.display(ecg_rate[0])
+                self.Pulse_lcd.display(ecg_rate[0])
+            except:
+                print("fault detected")
         else:
             self.ECG_lcd.display(0)
             self.Pulse_lcd.display(0)
@@ -413,9 +439,9 @@ class Ui_MainWindow(object):
         self.updatePPGGraphs()
 
     def updateRSPGraphs(self):
-
         for i in range(5):
             self.full_yResp = np.roll(self.full_yResp, -1)
+            self.alt_yECG = np.roll(self.alt_yECG, -1)
         if(self.Resp_status == True):
             self.Resp_y = self.full_yResp[0:1000]
         else:
@@ -444,8 +470,12 @@ class Ui_MainWindow(object):
         # Update the first graph
         for i in range(5):
             self.full_yECG = np.roll(self.full_yECG, -1)
+            self.alt_yECG = np.roll(self.alt_yECG, -1)
         if(self.ECG_status == True):
-            self.ECG_y = self.full_yECG[0:1000]
+            if(self.speed == 0):
+                self.ECG_y = self.full_yECG[0:1000]
+            else:
+                self.ECG_y = self.alt_yECG[0:1000]
         else:
             self.ECG_y = None
         self.ECGline.set_xdata(self.ECG_x)
